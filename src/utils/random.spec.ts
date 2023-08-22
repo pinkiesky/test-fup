@@ -8,8 +8,8 @@ describe('random', () => {
     });
 
     it('should generate a random string with the given size', () => {
-      const result = generateRandomString('test', 10);
-      expect(result).toHaveLength(10);
+      expect(generateRandomString('test', 10)).toHaveLength(10);
+      expect(generateRandomString('test', 15)).toHaveLength(15);
     });
 
     it('should generate a random string based on the given key', () => {
