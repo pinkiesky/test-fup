@@ -1,6 +1,6 @@
 import { ObjectId } from "mongodb";
 
-export interface IUser {
+export interface ICustomer {
   _id?: ObjectId;
   firstName: string;
   lastName: string;
@@ -16,9 +16,11 @@ export interface IUser {
   createdAt: Date;
 }
 
-export interface IChangedUsersList {
+export interface IChangedCustomersList {
   _id?: ObjectId;
-  userIds: ObjectId[];
+  customerIds: ObjectId[];
   operationType: 'insert' | 'update';
+  isUpdateFailed?: boolean;
   createdAt: Date;
+  updatedAt: Date;
 }

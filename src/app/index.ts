@@ -1,11 +1,11 @@
 import 'dotenv/config';
 import { MongoClient } from 'mongodb';
 import { faker } from '@faker-js/faker';
-import { IUser, IChangedUsersList } from '../types';
+import { ICustomer, IChangedCustomersList } from '../types';
 import { generateRandomInt } from '../utils/random';
 import { sleep } from '../utils/sleep';
 
-function generateRandomUser(): IUser {
+function generateRandomCustomer(): ICustomer {
   return {
     firstName: faker.person.firstName(),
     lastName: faker.person.lastName(),
@@ -28,26 +28,41 @@ async function main() {
   const session = mongoClient.startSession();
 
   const db = mongoClient.db();
-  const usersCollection = db.collection<IUser>('users');
-  const usersChangesCollection =
-    db.collection<IChangedUsersList>('changedUsers');
+  const customersCollection = db.collection<ICustomer>('customers');
+  const customersChangesCollection =
+    db.collection<IChangedCustomersList>('changedCustomers');
 
+  const stat = {
+    insert: 0,
+    update: 0,
+  };
   while (true) {
-    const numberOfUser = generateRandomInt(1, 10);
-    const users = Array.from({ length: numberOfUser }, generateRandomUser);
+    const numberOfCustomer = generateRandomInt(1, 10);
+    const customers = Array.from(
+      { length: numberOfCustomer },
+      generateRandomCustomer,
+    );
 
     await session.withTransaction(async () => {
-      const result = await usersCollection.insertMany(users, { session });
+      const result = await customersCollection.insertMany(customers, {
+        session,
+      });
       const insertedIds = Object.values(result.insertedIds);
-      const changesList: IChangedUsersList = {
-        userIds: insertedIds,
+
+      const now = new Date();
+      const changesList: IChangedCustomersList = {
+        customerIds: insertedIds,
         operationType: 'insert',
-        createdAt: new Date(),
+        createdAt: now,
+        updatedAt: now,
       };
-      await usersChangesCollection.insertOne(changesList, { session });
+      await customersChangesCollection.insertOne(changesList, { session });
+      stat.insert += insertedIds.length;
     });
 
-    await sleep(200);
+    console.log('inserted amount', stat.insert, 'documents');
+
+    // await sleep(0);
   }
 }
 
