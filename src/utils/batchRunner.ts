@@ -1,25 +1,30 @@
 import { debounce } from 'lodash';
 import Queue from 'queue';
 import { once } from 'node:events';
+import { getLogger } from './logger';
 
-interface IBatchWriterOptions {
+const logger = getLogger('batchRunner');
+
+interface IBatchRunnerOptions {
   maxBatchSize: number;
   debounceTimeMs: number;
-}
-
-interface IBatchWriter<T> {
-  (document: T): Promise<void>;
-  close(): Promise<void>;
+  onError?: (error: Error) => void;
 }
 
 interface IBatchRunner<T> {
-  (document: T[]): Promise<void>;
+  pushToBatch(elem: T): Promise<void>;
+  flush(): Promise<void>;
+  close(): Promise<void>;
+}
+
+interface ITask<T> {
+  (batch: T[]): Promise<void>;
 }
 
 export function batchRunner<T>(
-  runner: IBatchRunner<T>,
-  options: IBatchWriterOptions,
-): IBatchWriter<T> {
+  task: ITask<T>,
+  options: IBatchRunnerOptions,
+): IBatchRunner<T> {
   const batch: T[] = [];
   const queue = new Queue({ autostart: true, concurrency: 1 });
 
@@ -33,9 +38,13 @@ export function batchRunner<T>(
 
     queue.push(async () => {
       try {
-        await runner(batchCloned);
-      } catch (error) {
-        console.error(error);
+        await task(batchCloned);
+      } catch (error: any) {
+        if (options.onError) {
+          options.onError(error);
+        } else {
+          logger.error('unhandled error in batchRunner', error);
+        }
       }
     });
   };
@@ -43,24 +52,28 @@ export function batchRunner<T>(
     ? debounce(flush, options.debounceTimeMs, {
         maxWait: options.debounceTimeMs,
       })
-    : () => Promise.resolve();
+    : null;
 
-  const func = async (document: T) => {
-    batch.push(document as any);
+  const pushToBatch = async (document: T) => {
+    batch.push(document);
 
     if (batch.length >= options.maxBatchSize) {
       flush();
-    } else {
-      debouncedFlush();
     }
-  };
-  func.close = async () => {
-    await flush();
 
-    if (queue.length) {
-      await once(queue, 'end');
-    }
+    debouncedFlush?.();
   };
 
-  return func;
+  return {
+    pushToBatch,
+    flush,
+    close: async () => {
+      debouncedFlush?.cancel();
+      await flush();
+
+      if (queue.length) {
+        await once(queue, 'end');
+      }
+    },
+  };
 }

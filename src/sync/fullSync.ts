@@ -21,7 +21,7 @@ export async function fullSync(mongoUrl: string) {
     start: Date.now(),
   };
 
-  const addCustomer = batchRunner<ICustomer>(
+  const batchWriter = batchRunner<ICustomer>(
     async (custs: ICustomer[]) => {
       const writeActions = custs.map((cust) => ({
         updateOne: {
@@ -47,10 +47,10 @@ export async function fullSync(mongoUrl: string) {
     .batchSize(1000);
   while (await cursor.hasNext()) {
     const customer = await cursor.next();
-    addCustomer(anonymizeCustomer(customer!));
+    batchWriter.pushToBatch(anonymizeCustomer(customer!));
   }
 
-  await addCustomer.close();
+  await batchWriter.close();
   await client.close();
 
   const duration = Date.now() - stat.start;

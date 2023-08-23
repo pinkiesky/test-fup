@@ -78,7 +78,7 @@ export async function incremenalSync(mongoUrl: string) {
   );
   const customersMetaCollection =
     db.collection<ICustomerMeta>('customers_meta');
-  const insertCustomer = batchRunner<ICustomerMeta>(
+  const customerWriter = batchRunner<ICustomerMeta>(
     async (metas: ICustomerMeta[]) => {
       await updateCustomers(
         metas,
@@ -110,7 +110,7 @@ export async function incremenalSync(mongoUrl: string) {
     let hasData = false;
     while (await cursor.hasNext()) {
       const meta = (await cursor.next())!;
-      insertCustomer(meta);
+      customerWriter.pushToBatch(meta);
 
       lastUpdatedAt = meta.updatedAt;
       hasData = true;
