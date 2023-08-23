@@ -12,7 +12,7 @@ interface IBatchRunnerOptions {
 }
 
 interface IBatchRunner<T> {
-  pushToBatch(elem: T): Promise<void>;
+  pushToBatch(elem: T): void;
   flush(): Promise<void>;
   close(): Promise<void>;
 }
