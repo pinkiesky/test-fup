@@ -2,8 +2,12 @@ import 'dotenv/config';
 
 import { MongoClient } from 'mongodb';
 import { faker } from '@faker-js/faker';
-import { ICustomer, IChangedCustomersList } from '../types';
+import { ICustomer, ICustomerMeta } from '../types';
 import { generateRandomInt } from '../utils/random';
+import { getLogger } from '../utils/logger';
+import { sleep } from '../utils/sleep';
+
+const logger = getLogger('app');
 
 function generateRandomCustomer(): ICustomer {
   return {
@@ -29,8 +33,8 @@ async function main() {
 
   const db = mongoClient.db();
   const customersCollection = db.collection<ICustomer>('customers');
-  const customersChangesCollection =
-    db.collection<IChangedCustomersList>('changedCustomers');
+  const customersMetaCollection =
+    db.collection<ICustomerMeta>('customers_meta');
 
   const stat = {
     insert: 0,
@@ -47,22 +51,28 @@ async function main() {
       const result = await customersCollection.insertMany(customers, {
         session,
       });
-      const insertedIds = Object.values(result.insertedIds);
+      const insertedIds = Object.entries(result.insertedIds);
 
       const now = new Date();
-      const changesList: IChangedCustomersList = {
-        customerIds: insertedIds,
-        operationType: 'insert',
+      const metas: ICustomerMeta[] = insertedIds.map(([index, id]) => ({
+        customerId: id,
+        version: 1,
+        isSynced: false,
         createdAt: now,
         updatedAt: now,
-      };
-      await customersChangesCollection.insertOne(changesList, { session });
+        customerObject: {
+          ...customers[Number(index)],
+          _id: id,
+        },
+      }));
+      
+      await customersMetaCollection.insertMany(metas, { session });
       stat.insert += insertedIds.length;
     });
 
-    console.log('inserted amount', stat.insert, 'documents');
+    logger.info('inserted amount', stat.insert, 'customers');
 
-    // await sleep(0);
+    await sleep(200);
   }
 }
 

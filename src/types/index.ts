@@ -1,4 +1,4 @@
-import { ObjectId } from "mongodb";
+import { ObjectId, WithId } from "mongodb";
 
 export interface ICustomer {
   _id?: ObjectId;
@@ -16,11 +16,12 @@ export interface ICustomer {
   createdAt: Date;
 }
 
-export interface IChangedCustomersList {
+export interface ICustomerMeta {
   _id?: ObjectId;
-  customerIds: ObjectId[];
-  operationType: 'insert' | 'update';
-  isUpdateFailed?: boolean;
+  customerId: ObjectId;
+  customerObject: WithId<ICustomer>;
+  version: number;
+  isSynced: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -1,5 +1,5 @@
 import { Collection, MongoClient, ObjectId } from 'mongodb';
-import { IChangedCustomersList, ICustomer } from '../types';
+import { ICustomerMeta, ICustomer } from '../types';
 import { batchRunner } from '../utils/batchRunner';
 import { sleep } from '../utils/sleep';
 import { anonymizeCustomer } from '../utils/anonymizeCustomer';
@@ -7,44 +7,39 @@ import { getLogger } from '../utils/logger';
 
 const logger = getLogger('incrementalSync');
 
-interface ICustomerSyncRequest {
-  customerId: ObjectId;
-  changeListId: ObjectId;
-}
-
 export async function updateCustomers(
-  reqs: ICustomerSyncRequest[],
-  customersCollection: Collection<ICustomer>,
+  syncMeta: ICustomerMeta[],
   customersAnonCollection: Collection<ICustomer>,
-  customersChangesCollection: Collection<IChangedCustomersList>,
+  customersMetaCollection: Collection<ICustomerMeta>,
 ) {
-  const customerIds = [...new Set(reqs.map((req) => req.customerId))];
-  const changeListIds = [...new Set(reqs.map((req) => req.changeListId))];
+  let syncedCount = 0;
+  for (const meta of syncMeta) {
+    const actualMeta = await customersMetaCollection.findOneAndUpdate({
+      customerId: meta.customerId,
+      version: meta.version,
+      isSynced: false,
+    }, {
+      $set: {
+        isSynced: true,
+        updatedAt: new Date(),
+      },
+    });
+    const isUpdated = !!actualMeta.value;
 
-  const customersRaw = await customersCollection
-    .find({ _id: { $in: customerIds } })
-    .toArray();
+    if (isUpdated) {
+      await customersAnonCollection.updateOne({
+        _id: meta.customerId,
+      }, {
+        $set: anonymizeCustomer(meta.customerObject),
+      }, {
+        upsert: true,
+      });
 
-  if (customersRaw.length !== customerIds.length) {
-    logger.warn('missing customers', customerIds.length - customersRaw.length);
+      syncedCount++;
+    }
   }
 
-  const customersAnon = customersRaw.map(anonymizeCustomer);
-  const customerUpdateActions = customersAnon.map((cust) => ({
-    updateOne: {
-      filter: { _id: cust._id },
-      update: { $set: cust },
-      upsert: true,
-    },
-  }));
-
-  await customersAnonCollection.bulkWrite(customerUpdateActions, {
-    ordered: false,
-  });
-  await customersChangesCollection.deleteMany({ _id: { $in: changeListIds } });
-
-  logger.info('synced', customersAnon.length, 'customers');
-  logger.info('deleted', changeListIds.length, 'change lists');
+  logger.info('synced', syncedCount, 'customers');
 }
 
 export async function incremenalSync(mongoUrl: string) {
@@ -55,19 +50,17 @@ export async function incremenalSync(mongoUrl: string) {
   await client.connect();
   const db = client.db();
 
-  const customersCollection = db.collection<ICustomer>('customers');
   const customersAnonCollection = db.collection<ICustomer>(
     'customers_anonymised',
   );
-  const customersChangesCollection =
-    db.collection<IChangedCustomersList>('changedCustomers');
-  const insertCustomer = batchRunner<ICustomerSyncRequest>(
-    async (customerIds: ICustomerSyncRequest[]) => {
+  const customersMetaCollection =
+    db.collection<ICustomerMeta>('customers_meta');
+  const insertCustomer = batchRunner<ICustomerMeta>(
+    async (metas: ICustomerMeta[]) => {
       await updateCustomers(
-        customerIds,
-        customersCollection,
+        metas,
         customersAnonCollection,
-        customersChangesCollection,
+        customersMetaCollection,
       );
     },
     {
@@ -76,25 +69,25 @@ export async function incremenalSync(mongoUrl: string) {
     },
   );
 
+  let lastUpdatedAt = new Date(0);
   while (true) {
-    let lastUpdatedAt = new Date(0);
-    const cursor = customersChangesCollection
-      .find({ updatedAt: { $gt: lastUpdatedAt } })
+    const cursor = customersMetaCollection
+      .find({ 
+        isSynced: false,
+        updatedAt: { $gt: lastUpdatedAt },
+      }, {
+        readPreference: 'primary',
+      })
       .sort({ updatedAt: 1 })
       .batchSize(1000);
 
     let hasData = false;
     while (await cursor.hasNext()) {
-      const changesList = (await cursor.next())!;
-      changesList.customerIds.forEach((customerId) => {
-        insertCustomer({
-          customerId,
-          changeListId: changesList._id,
-        });
-      });
+      const meta = (await cursor.next())!;
+      insertCustomer(meta);
 
+      lastUpdatedAt = meta.updatedAt;
       hasData = true;
-      lastUpdatedAt = changesList.updatedAt;
     }
 
     if (!hasData) {
