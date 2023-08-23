@@ -6,17 +6,17 @@ export class Logger {
   }
 
   info(...args: any[]) {
-    console.info(`ℹ️ [${this._name}]`, ...args);
+    console.info(`🔵 [${this._name}]`, ...args);
   }
 
   warn(...args: any[]) {
     // emoji error symbol: https://emojipedia.org/no-entry-sign/
-    console.error(`⚠️ [${this._name}]`, ...args);
+    console.error(`🟡 [${this._name}]`, ...args);
   }
 
   error(...args: any[]) {
     // emoji error symbol: https://emojipedia.org/no-entry-sign/
-    console.error(`🚫 [${this._name}]`, ...args);
+    console.error(`🔴 [${this._name}]`, ...args);
   }
 }
 
