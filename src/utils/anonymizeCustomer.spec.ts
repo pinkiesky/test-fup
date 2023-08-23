@@ -52,7 +52,7 @@ describe('anonymizeCustomer', () => {
       },
       createdAt: new Date(),
     };
-  
+
     const anonymizedCustomer1 = anonymizeCustomer(customer);
     const anonymizedCustomer2 = anonymizeCustomer(customer);
     expect(anonymizedCustomer1).toEqual(anonymizedCustomer2);

@@ -76,4 +76,4 @@ async function main() {
   }
 }
 
-main();
+main().catch(logger.error);

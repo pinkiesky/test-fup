@@ -1,4 +1,4 @@
-import { Collection, MongoClient, ObjectId } from 'mongodb';
+import { Collection, MongoClient } from 'mongodb';
 import { ICustomerMeta, ICustomer } from '../types';
 import { batchRunner } from '../utils/batchRunner';
 import { sleep } from '../utils/sleep';
@@ -27,8 +27,8 @@ export async function updateCustomers(
         },
       },
     );
-    const isUpdated = !!actualMeta.value;
 
+    const isUpdated = !!actualMeta.value;
     if (isUpdated) {
       try {
         await customersAnonCollection.updateOne(
@@ -68,7 +68,6 @@ export async function updateCustomers(
 export async function incremenalSync(mongoUrl: string) {
   const client = new MongoClient(mongoUrl, {
     readPreference: 'primary',
-    readConcern: { level: 'majority' },
   });
   await client.connect();
   const db = client.db();
