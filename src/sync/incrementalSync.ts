@@ -7,7 +7,7 @@ import { getLogger } from '../utils/logger';
 
 const logger = getLogger('incrementalSync');
 
-export async function updateCustomers(
+async function updateCustomers(
   syncMeta: ICustomerMeta[],
   customersAnonCollection: Collection<ICustomer>,
   customersMetaCollection: Collection<ICustomerMeta>,
