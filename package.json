@@ -4,7 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "tsc --watch",
+    "build": "tsc",
+    "db:init": "node ./dist/init",
+    "db:recreate": "node ./dist/init --drop-collections",
+    "app:start": "node ./dist/app",
+    "sync:incr": "node ./dist/sync",
+    "sync:full": "node ./dist/sync --full-reindex"
   },
   "keywords": [],
   "author": "",
