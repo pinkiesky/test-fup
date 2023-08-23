@@ -2,11 +2,13 @@
 
 ## First run
 
+Check `.env` file and set the correct values.
+
 ```bash
 $ npm install && npm run build && npm run db:init
 ```
 
-## Run app.js
+## Run app
 
 ```bash
 $ npm run app:start

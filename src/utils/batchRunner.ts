@@ -1,5 +1,5 @@
 import { debounce } from 'lodash';
-import Queue from 'queue'
+import Queue from 'queue';
 import { once } from 'node:events';
 
 interface IBatchWriterOptions {
@@ -21,7 +21,7 @@ export function batchRunner<T>(
   options: IBatchWriterOptions,
 ): IBatchWriter<T> {
   const batch: T[] = [];
-  const queue = new Queue({ autostart: true, concurrency: 1 })
+  const queue = new Queue({ autostart: true, concurrency: 1 });
 
   const flush = async () => {
     if (!batch.length) {
@@ -59,7 +59,7 @@ export function batchRunner<T>(
 
     if (queue.length) {
       await once(queue, 'end');
-    } 
+    }
   };
 
   return func;

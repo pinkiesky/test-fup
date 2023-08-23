@@ -5,6 +5,8 @@
   "main": "index.js",
   "scripts": {
     "dev": "tsc --watch",
+    "test": "jest",
+    "lint:fix": "prettier -w ./src",
     "build": "tsc",
     "db:init": "node ./dist/init",
     "db:recreate": "node ./dist/init --drop-collections",

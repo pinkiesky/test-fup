@@ -53,7 +53,7 @@ export async function fullSync(mongoUrl: string) {
   await addCustomer.close();
   await client.close();
 
-  const duration = (Date.now() - stat.start);
+  const duration = Date.now() - stat.start;
   const durationSec = Math.round(duration / 1000);
   logger.info('synced', stat.sync, 'customers in', durationSec, 'sec');
 }

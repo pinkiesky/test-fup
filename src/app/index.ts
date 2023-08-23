@@ -65,7 +65,7 @@ async function main() {
           _id: id,
         },
       }));
-      
+
       await customersMetaCollection.insertMany(metas, { session });
       stat.insert += insertedIds.length;
     });

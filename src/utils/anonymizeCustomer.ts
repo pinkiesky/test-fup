@@ -1,5 +1,5 @@
-import { ICustomer } from "../types";
-import { generateRandomString } from "./random";
+import { ICustomer } from '../types';
+import { generateRandomString } from './random';
 
 export function anonymizeCustomer(customer: ICustomer): ICustomer {
   const [emailName, emailDomain] = customer.email.split('@');
@@ -18,5 +18,5 @@ export function anonymizeCustomer(customer: ICustomer): ICustomer {
       country: customer.address.country,
     },
     createdAt: customer.createdAt,
-  }
+  };
 }
