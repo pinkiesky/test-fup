@@ -37,7 +37,7 @@ export async function fullSync(mongoUrl: string) {
     .batchSize(1000);
   while (await cursor.hasNext()) {
     const customer = await cursor.next();
-    insertCustomer(anonymizeCustomer(customer));
+    insertCustomer(anonymizeCustomer(customer!));
   }
 
   await insertCustomer.close();

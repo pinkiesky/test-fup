@@ -75,7 +75,7 @@ export async function incremenalSync(mongoUrl: string) {
 
     let hasData = false;
     while (await cursor.hasNext()) {
-      const changesList = await cursor.next();
+      const changesList = (await cursor.next())!;
       changesList.customerIds.forEach((customerId) => {
         insertCustomer({
           customerId,

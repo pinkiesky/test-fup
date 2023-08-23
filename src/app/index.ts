@@ -1,9 +1,9 @@
 import 'dotenv/config';
+
 import { MongoClient } from 'mongodb';
 import { faker } from '@faker-js/faker';
 import { ICustomer, IChangedCustomersList } from '../types';
 import { generateRandomInt } from '../utils/random';
-import { sleep } from '../utils/sleep';
 
 function generateRandomCustomer(): ICustomer {
   return {
@@ -23,7 +23,7 @@ function generateRandomCustomer(): ICustomer {
 }
 
 async function main() {
-  const mongoClient = await MongoClient.connect(process.env.MONGO_URL);
+  const mongoClient = await MongoClient.connect(process.env.MONGO_URL!);
   await mongoClient.connect();
   const session = mongoClient.startSession();
 
