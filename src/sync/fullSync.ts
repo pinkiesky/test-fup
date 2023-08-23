@@ -2,6 +2,9 @@ import { MongoClient } from 'mongodb';
 import { batchRunner } from '../utils/batchRunner';
 import { ICustomer } from '../types';
 import { anonymizeCustomer } from '../utils/anonymizeCustomer';
+import { getLogger } from '../utils/logger';
+
+const logger = getLogger('fullSync');
 
 export async function fullSync(mongoUrl: string) {
   const client = new MongoClient(mongoUrl);
@@ -13,7 +16,12 @@ export async function fullSync(mongoUrl: string) {
     'customers_anonymised',
   );
 
-  const insertCustomer = batchRunner<ICustomer>(
+  const stat = {
+    sync: 0,
+    start: Date.now(),
+  };
+
+  const addCustomer = batchRunner<ICustomer>(
     async (custs: ICustomer[]) => {
       const writeActions = custs.map((cust) => ({
         updateOne: {
@@ -23,7 +31,9 @@ export async function fullSync(mongoUrl: string) {
         },
       }));
       await customersAnonCollection.bulkWrite(writeActions);
-      console.info('inserted', custs.length, 'documents');
+
+      logger.info('synced', custs.length, 'customers');
+      stat.sync += custs.length;
     },
     {
       maxBatchSize: 1000,
@@ -37,9 +47,13 @@ export async function fullSync(mongoUrl: string) {
     .batchSize(1000);
   while (await cursor.hasNext()) {
     const customer = await cursor.next();
-    insertCustomer(anonymizeCustomer(customer!));
+    addCustomer(anonymizeCustomer(customer!));
   }
 
-  await insertCustomer.close();
+  await addCustomer.close();
   await client.close();
+
+  const duration = (Date.now() - stat.start);
+  const durationSec = Math.round(duration / 1000);
+  logger.info('synced', stat.sync, 'customers in', durationSec, 'sec');
 }

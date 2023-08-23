@@ -3,6 +3,9 @@ import { IChangedCustomersList, ICustomer } from '../types';
 import { batchRunner } from '../utils/batchRunner';
 import { sleep } from '../utils/sleep';
 import { anonymizeCustomer } from '../utils/anonymizeCustomer';
+import { getLogger } from '../utils/logger';
+
+const logger = getLogger('incrementalSync');
 
 interface ICustomerSyncRequest {
   customerId: ObjectId;
@@ -15,12 +18,16 @@ export async function updateCustomers(
   customersAnonCollection: Collection<ICustomer>,
   customersChangesCollection: Collection<IChangedCustomersList>,
 ) {
-  const customerIds = reqs.map((req) => req.customerId);
+  const customerIds = [...new Set(reqs.map((req) => req.customerId))];
   const changeListIds = [...new Set(reqs.map((req) => req.changeListId))];
 
   const customersRaw = await customersCollection
     .find({ _id: { $in: customerIds } })
     .toArray();
+
+  if (customersRaw.length !== customerIds.length) {
+    logger.warn('missing customers', customerIds.length - customersRaw.length);
+  }
 
   const customersAnon = customersRaw.map(anonymizeCustomer);
   const customerUpdateActions = customersAnon.map((cust) => ({
@@ -36,12 +43,15 @@ export async function updateCustomers(
   });
   await customersChangesCollection.deleteMany({ _id: { $in: changeListIds } });
 
-  console.log('inserted', customersAnon.length, 'customers');
-  console.log('deleted', changeListIds.length, 'change lists');
+  logger.info('synced', customersAnon.length, 'customers');
+  logger.info('deleted', changeListIds.length, 'change lists');
 }
 
 export async function incremenalSync(mongoUrl: string) {
-  const client = new MongoClient(mongoUrl);
+  const client = new MongoClient(mongoUrl, {
+    readPreference: 'primary',
+    readConcern: { level: 'majority' },
+  });
   await client.connect();
   const db = client.db();
 
