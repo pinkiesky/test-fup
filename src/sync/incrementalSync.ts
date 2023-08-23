@@ -14,28 +14,51 @@ export async function updateCustomers(
 ) {
   let syncedCount = 0;
   for (const meta of syncMeta) {
-    const actualMeta = await customersMetaCollection.findOneAndUpdate({
-      customerId: meta.customerId,
-      version: meta.version,
-      isSynced: false,
-    }, {
-      $set: {
-        isSynced: true,
-        updatedAt: new Date(),
+    const actualMeta = await customersMetaCollection.findOneAndUpdate(
+      {
+        isSynced: false,
+        customerId: meta.customerId,
+        version: meta.version,
       },
-    });
+      {
+        $set: {
+          isSynced: true,
+          updatedAt: new Date(),
+        },
+      },
+    );
     const isUpdated = !!actualMeta.value;
 
     if (isUpdated) {
-      await customersAnonCollection.updateOne({
-        _id: meta.customerId,
-      }, {
-        $set: anonymizeCustomer(meta.customerObject),
-      }, {
-        upsert: true,
-      });
+      try {
+        await customersAnonCollection.updateOne(
+          {
+            _id: meta.customerId,
+          },
+          {
+            $set: anonymizeCustomer(meta.customerObject),
+          },
+          {
+            upsert: true,
+          },
+        );
 
-      syncedCount++;
+        syncedCount++;
+      } catch (err) {
+        logger.error('failed to update customer', meta.customerId, err);
+        await customersMetaCollection.updateOne(
+          {
+            _id: meta._id,
+            isSynced: true,
+          },
+          {
+            $set: {
+              isSynced: false,
+              updatedAt: new Date(),
+            },
+          },
+        );
+      }
     }
   }
 
@@ -72,12 +95,15 @@ export async function incremenalSync(mongoUrl: string) {
   let lastUpdatedAt = new Date(0);
   while (true) {
     const cursor = customersMetaCollection
-      .find({ 
-        isSynced: false,
-        updatedAt: { $gt: lastUpdatedAt },
-      }, {
-        readPreference: 'primary',
-      })
+      .find(
+        {
+          isSynced: false,
+          updatedAt: { $gt: lastUpdatedAt },
+        },
+        {
+          readPreference: 'primary',
+        },
+      )
       .sort({ updatedAt: 1 })
       .batchSize(1000);
 
