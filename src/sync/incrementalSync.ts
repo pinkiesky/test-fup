@@ -1,14 +1,14 @@
-import { Collection, MongoClient } from 'mongodb';
-import Queue from 'queue';
-import { debounce } from 'lodash';
-import { once } from 'node:events';
-import { ICustomerMeta, ICustomer } from '../types';
-import { batchRunner } from '../utils/batchRunner';
-import { sleep } from '../utils/sleep';
-import { anonymizeCustomer } from '../utils/anonymizeCustomer';
-import { getLogger } from '../utils/logger';
+import { Collection, MongoClient } from "mongodb";
+import Queue from "queue";
+import { debounce } from "lodash";
+import { once } from "node:events";
+import { ICustomerMeta, ICustomer } from "../types";
+import { batchRunner } from "../utils/batchRunner";
+import { sleep } from "../utils/sleep";
+import { anonymizeCustomer } from "../utils/anonymizeCustomer";
+import { getLogger } from "../utils/logger";
 
-const logger = getLogger('incrementalSync');
+const logger = getLogger("incrementalSync");
 
 async function updateCustomer(
   meta: ICustomerMeta,
@@ -47,7 +47,7 @@ async function updateCustomer(
       },
     );
   } catch (err) {
-    logger.error('failed to update customer', meta.customerId, err);
+    logger.error("failed to update customer", meta.customerId, err);
     await customersMetaCollection.updateOne(
       {
         _id: meta._id,
@@ -75,17 +75,17 @@ function getUpdatingQueue() {
 
   const writeStat = debounce(
     () => {
-      logger.info('synced', queueStat, 'customers');
+      logger.info("synced", queueStat, "customers");
     },
     1000,
     { maxWait: 5000 },
   );
 
-  q.on('success', () => {
+  q.on("success", () => {
     queueStat.sync++;
     writeStat();
   });
-  q.on('error', () => {
+  q.on("error", () => {
     queueStat.errors++;
     writeStat();
   });
@@ -96,17 +96,15 @@ function getUpdatingQueue() {
 export async function incremenalSync(mongoUrl: string) {
   const updatingQueue = getUpdatingQueue();
 
-  const client = new MongoClient(mongoUrl, {
-    readPreference: 'primary',
-  });
+  const client = new MongoClient(mongoUrl);
   await client.connect();
   const db = client.db();
 
   const customersAnonCollection = db.collection<ICustomer>(
-    'customers_anonymised',
+    "customers_anonymised",
   );
   const customersMetaCollection =
-    db.collection<ICustomerMeta>('customers_meta');
+    db.collection<ICustomerMeta>("customers_meta");
 
   const customerWriter = batchRunner<ICustomerMeta>(
     async (metas: ICustomerMeta[]) => {
@@ -135,7 +133,7 @@ export async function incremenalSync(mongoUrl: string) {
           updatedAt: { $gt: lastUpdatedAt },
         },
         {
-          readPreference: 'primary',
+          readPreference: "primary",
         },
       )
       .sort({ updatedAt: 1 })
@@ -156,8 +154,8 @@ export async function incremenalSync(mongoUrl: string) {
     }
 
     if (updatingQueue.length > 5000) {
-      logger.warn('queue is full, waiting for it to drain');
-      await once(updatingQueue, 'end');
+      logger.warn("queue is full, waiting for it to drain");
+      await once(updatingQueue, "end");
     }
   }
 }

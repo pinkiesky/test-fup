@@ -1,20 +1,20 @@
-import { ObjectId } from 'mongodb';
-import { anonymizeCustomer } from './anonymizeCustomer';
+import { ObjectId } from "mongodb";
+import { anonymizeCustomer } from "./anonymizeCustomer";
 
-describe('anonymizeCustomer', () => {
-  it('should anonymize the customer', () => {
+describe("anonymizeCustomer", () => {
+  it("should anonymize the customer", () => {
     const customer = {
       _id: new ObjectId(),
-      firstName: 'John',
-      lastName: 'Doe',
-      email: 'email@host.com',
+      firstName: "John",
+      lastName: "Doe",
+      email: "email@host.com",
       address: {
-        line1: 'line1',
-        line2: 'line2',
-        postcode: 'postcode',
-        city: 'city',
-        state: 'state',
-        country: 'country',
+        line1: "line1",
+        line2: "line2",
+        postcode: "postcode",
+        city: "city",
+        state: "state",
+        country: "country",
       },
       createdAt: new Date(),
     };
@@ -36,19 +36,19 @@ describe('anonymizeCustomer', () => {
     });
   });
 
-  it('should work idempotent', () => {
+  it("should work idempotent", () => {
     const customer = {
       _id: new ObjectId(),
-      firstName: 'John',
-      lastName: 'Doe',
-      email: 'email@host.com',
+      firstName: "John",
+      lastName: "Doe",
+      email: "email@host.com",
       address: {
-        line1: 'line1',
-        line2: 'line2',
-        postcode: 'postcode',
-        city: 'city',
-        state: 'state',
-        country: 'country',
+        line1: "line1",
+        line2: "line2",
+        postcode: "postcode",
+        city: "city",
+        state: "state",
+        country: "country",
       },
       createdAt: new Date(),
     };

@@ -1,19 +1,19 @@
-import { MongoClient } from 'mongodb';
-import { batchRunner } from '../utils/batchRunner';
-import { ICustomer } from '../types';
-import { anonymizeCustomer } from '../utils/anonymizeCustomer';
-import { getLogger } from '../utils/logger';
+import { MongoClient } from "mongodb";
+import { batchRunner } from "../utils/batchRunner";
+import { ICustomer } from "../types";
+import { anonymizeCustomer } from "../utils/anonymizeCustomer";
+import { getLogger } from "../utils/logger";
 
-const logger = getLogger('fullSync');
+const logger = getLogger("fullSync");
 
 export async function fullSync(mongoUrl: string) {
   const client = new MongoClient(mongoUrl);
   await client.connect();
   const db = client.db();
 
-  const customersCollection = db.collection<ICustomer>('customers');
+  const customersCollection = db.collection<ICustomer>("customers");
   const customersAnonCollection = db.collection<ICustomer>(
-    'customers_anonymised',
+    "customers_anonymised",
   );
 
   const stat = {
@@ -32,7 +32,7 @@ export async function fullSync(mongoUrl: string) {
       }));
       await customersAnonCollection.bulkWrite(writeActions);
 
-      logger.info('synced', custs.length, 'customers');
+      logger.info("synced", custs.length, "customers");
       stat.sync += custs.length;
     },
     {
@@ -55,5 +55,5 @@ export async function fullSync(mongoUrl: string) {
 
   const duration = Date.now() - stat.start;
   const durationSec = Math.round(duration / 1000);
-  logger.info('synced', stat.sync, 'customers in', durationSec, 'sec');
+  logger.info("synced", stat.sync, "customers in", durationSec, "sec");
 }

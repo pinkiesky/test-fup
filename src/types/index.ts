@@ -1,4 +1,4 @@
-import { ObjectId, WithId } from 'mongodb';
+import { ObjectId, WithId } from "mongodb";
 
 export interface ICustomer {
   _id?: ObjectId;

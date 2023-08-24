@@ -1,8 +1,8 @@
-import { ICustomer } from '../types';
-import { generateRandomString } from './random';
+import { ICustomer } from "../types";
+import { generateRandomString } from "./random";
 
 export function anonymizeCustomer(customer: ICustomer): ICustomer {
-  const [emailName, emailDomain] = customer.email.split('@');
+  const [emailName, emailDomain] = customer.email.split("@");
 
   return {
     _id: customer._id,

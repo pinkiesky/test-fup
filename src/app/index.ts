@@ -1,13 +1,13 @@
-import 'dotenv/config';
+import "dotenv/config";
 
-import { MongoClient } from 'mongodb';
-import { faker } from '@faker-js/faker';
-import { ICustomer, ICustomerMeta } from '../types';
-import { generateRandomInt } from '../utils/random';
-import { getLogger } from '../utils/logger';
-import { sleep } from '../utils/sleep';
+import { MongoClient } from "mongodb";
+import { faker } from "@faker-js/faker";
+import { ICustomer, ICustomerMeta } from "../types";
+import { generateRandomInt } from "../utils/random";
+import { getLogger } from "../utils/logger";
+import { sleep } from "../utils/sleep";
 
-const logger = getLogger('app');
+const logger = getLogger("app");
 
 function generateRandomCustomer(): ICustomer {
   return {
@@ -32,9 +32,9 @@ async function main() {
   const session = mongoClient.startSession();
 
   const db = mongoClient.db();
-  const customersCollection = db.collection<ICustomer>('customers');
+  const customersCollection = db.collection<ICustomer>("customers");
   const customersMetaCollection =
-    db.collection<ICustomerMeta>('customers_meta');
+    db.collection<ICustomerMeta>("customers_meta");
 
   const stat = {
     insert: 0,
@@ -70,7 +70,7 @@ async function main() {
       stat.insert += insertedIds.length;
     });
 
-    logger.info('inserted amount', stat.insert, 'customers');
+    logger.info("inserted amount", stat.insert, "customers");
 
     await sleep(200);
   }

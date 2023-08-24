@@ -1,9 +1,9 @@
-import { debounce } from 'lodash';
-import Queue from 'queue';
-import { once } from 'node:events';
-import { getLogger } from './logger';
+import { debounce } from "lodash";
+import Queue from "queue";
+import { once } from "node:events";
+import { getLogger } from "./logger";
 
-const logger = getLogger('batchRunner');
+const logger = getLogger("batchRunner");
 
 interface IBatchRunnerOptions {
   maxBatchSize: number;
@@ -43,7 +43,7 @@ export function batchRunner<T>(
         if (options.onError) {
           options.onError(error);
         } else {
-          logger.error('unhandled error in batchRunner', error);
+          logger.error("unhandled error in batchRunner", error);
         }
       }
     });
@@ -72,7 +72,7 @@ export function batchRunner<T>(
       await flush();
 
       if (queue.length) {
-        await once(queue, 'end');
+        await once(queue, "end");
       }
     },
   };

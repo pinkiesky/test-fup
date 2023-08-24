@@ -1,9 +1,9 @@
-import { batchRunner } from './batchRunner';
+import { batchRunner } from "./batchRunner";
 
 jest.useFakeTimers();
 
-describe('batchRunner', () => {
-  it('should batch the documents', async () => {
+describe("batchRunner", () => {
+  it("should batch the documents", async () => {
     const task = jest.fn();
     const batch = batchRunner(task, {
       maxBatchSize: 2,
@@ -31,7 +31,7 @@ describe('batchRunner', () => {
     expect(task).toHaveBeenNthCalledWith(5, [9, 10]);
   });
 
-  it('should debounce the documents', async () => {
+  it("should debounce the documents", async () => {
     const task = jest.fn();
     const batch = batchRunner(task, {
       maxBatchSize: 4,
