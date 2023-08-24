@@ -4,6 +4,8 @@
 
 Check `.env` file and set the correct values.
 
+Make sure your MongoDB is running in replica set mode.
+
 ```bash
 $ npm install && npm run build && npm run db:init
 ```
