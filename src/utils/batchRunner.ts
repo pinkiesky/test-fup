@@ -25,6 +25,8 @@ export function batchRunner<T>(
   task: ITask<T>,
   options: IBatchRunnerOptions,
 ): IBatchRunner<T> {
+  let isClosed = false;
+
   const batch: T[] = [];
   const queue = new Queue({ autostart: true, concurrency: 1 });
 
@@ -55,6 +57,10 @@ export function batchRunner<T>(
     : null;
 
   const pushToBatch = async (document: T) => {
+    if (isClosed) {
+      throw new Error("batchRunner is closed");
+    }
+
     batch.push(document);
 
     if (batch.length >= options.maxBatchSize) {
@@ -68,7 +74,9 @@ export function batchRunner<T>(
     pushToBatch,
     flush,
     close: async () => {
-      debouncedFlush?.cancel();
+      isClosed = true;
+
+      await debouncedFlush?.flush();
       await flush();
 
       if (queue.length) {
