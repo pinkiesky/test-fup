@@ -2,6 +2,8 @@
 
 ## First run
 
+Required Node version: v14 or higher (tested on v14.21.3).
+
 Check `.env` file and set the correct values.
 
 Make sure your MongoDB is running in replica set mode.
@@ -26,4 +28,12 @@ $ npm run sync:incr
 
 ```bash
 $ npm run sync:full
+```
+
+## Drop (recreate) database
+
+In case you want to drop the database and start from scratch.
+
+```bash
+$ npm run db:recreate
 ```
