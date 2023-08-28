@@ -30,12 +30,9 @@ async function initDatabase() {
   await Promise.all([
     db.collection("customers").createIndex({ createdAt: 1 }),
     db.collection("customers_anonymised").createIndex({ createdAt: 1 }),
-    db.collection("customers_meta").createIndex(
-      { isSynced: 1, customerId: 1 },
-      {
-        partialFilterExpression: { isSynced: false },
-      },
-    ),
+    db
+      .collection("customers_meta")
+      .createIndex({ customerId: 1 }, { unique: true }),
     db.collection("customers_meta").createIndex(
       { isSynced: 1, updatedAt: 1 },
       {
