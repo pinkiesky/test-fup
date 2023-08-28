@@ -19,8 +19,8 @@ function generateRandomCustomer(): ICustomer {
       line2: faker.location.secondaryAddress(),
       postcode: faker.location.zipCode(),
       city: faker.location.city(),
-      state: faker.location.state(),
-      country: faker.location.country(),
+      state: faker.location.state({ abbreviated: true }),
+      country: faker.location.countryCode(),
     },
     createdAt: new Date(),
   };
