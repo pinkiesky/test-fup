@@ -1,9 +1,9 @@
 import "dotenv/config";
 
-import { MongoClient } from "mongodb";
+import { ClientSession, Db, MongoClient, WithId } from "mongodb";
 import { faker } from "@faker-js/faker";
 import { ICustomer, ICustomerMeta } from "../types";
-import { generateRandomInt } from "../utils/random";
+import { generateRandomInt, mergeRandom } from "../utils/random";
 import { getLogger } from "../utils/logger";
 import { sleep } from "../utils/sleep";
 
@@ -26,20 +26,11 @@ function generateRandomCustomer(): ICustomer {
   };
 }
 
-async function main() {
-  const mongoClient = await MongoClient.connect(process.env.MONGO_URL!);
-  await mongoClient.connect();
-  const session = mongoClient.startSession();
-
-  const db = mongoClient.db();
+async function insertLogic(db: Db, session: ClientSession) {
   const customersCollection = db.collection<ICustomer>("customers");
   const customersMetaCollection =
     db.collection<ICustomerMeta>("customers_meta");
 
-  const stat = {
-    insert: 0,
-    update: 0,
-  };
   while (true) {
     const numberOfCustomer = generateRandomInt(1, 10);
     const customers = Array.from(
@@ -67,13 +58,85 @@ async function main() {
       }));
 
       await customersMetaCollection.insertMany(metas, { session });
-      stat.insert += insertedIds.length;
+      logger.info("inserted", metas.length, "customers");
     });
-
-    logger.info("inserted amount", stat.insert, "customers");
 
     await sleep(200);
   }
 }
 
-main().catch(logger.error);
+async function updateLogic(db: Db, session: ClientSession) {
+  const customersCollection = db.collection<ICustomer>("customers");
+  const customersMetaCollection =
+    db.collection<ICustomerMeta>("customers_meta");
+
+  while (true) {
+    await session.withTransaction(async () => {
+      const size = generateRandomInt(1, 10);
+      const customers = await customersCollection
+        .aggregate<WithId<ICustomer>>([{ $sample: { size } }], {
+          session,
+        })
+        .toArray();
+
+      if (!customers.length) {
+        return;
+      }
+
+      const patchedCustomers = customers.map((customer) => {
+        return mergeRandom<WithId<ICustomer>>(
+          customer,
+          generateRandomCustomer(),
+        );
+      });
+
+      const updateCustomers = patchedCustomers.map((customer) => {
+        return {
+          updateOne: {
+            filter: { _id: customer._id },
+            update: { $set: { ...customer, updatedAt: new Date() } },
+          },
+        };
+      });
+      const updateCustomersMeta = patchedCustomers.map((customer) => {
+        return {
+          updateOne: {
+            filter: { customerId: customer._id! },
+            update: {
+              $inc: { version: 1 },
+              $set: {
+                isSynced: false,
+                updatedAt: new Date(),
+                customerObject: customer,
+              },
+            },
+          },
+        };
+      });
+      await Promise.all([
+        customersCollection.bulkWrite(updateCustomers, {
+          session,
+        }),
+        customersMetaCollection.bulkWrite(updateCustomersMeta, {
+          session,
+        }),
+      ]);
+
+      logger.info("updated", patchedCustomers.length, "customers");
+    });
+
+    await sleep(1000);
+  }
+}
+
+async function main() {
+  const mongoClient = await MongoClient.connect(process.env.MONGO_URL!);
+  await mongoClient.connect();
+
+  await Promise.all([
+    insertLogic(mongoClient.db(), mongoClient.startSession()),
+    updateLogic(mongoClient.db(), mongoClient.startSession()),
+  ]);
+}
+
+main().catch(logger.error.bind(logger));

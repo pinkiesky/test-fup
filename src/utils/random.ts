@@ -21,3 +21,24 @@ export function generateRandomString(
 export function generateRandomInt(from: number, to: number): number {
   return Math.floor(Math.random() * (to - from + 1)) + from;
 }
+
+export function mergeRandom<T extends {}>(original: T, patch: Partial<T>): T {
+  const pickKey = (key: keyof T) => {
+    if (original[key] === undefined) {
+      return patch[key];
+    } else if (patch[key] === undefined) {
+      return original[key];
+    } else if (Math.random() > 0.5) {
+      return patch[key];
+    }
+
+    return original[key];
+  };
+
+  const result: Partial<T> = {};
+  for (const key of Object.keys(original) as (keyof T)[]) {
+    result[key] = pickKey(key);
+  }
+
+  return result as T;
+}

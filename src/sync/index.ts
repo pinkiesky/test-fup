@@ -17,4 +17,4 @@ async function main() {
   }
 }
 
-main().catch(mainLogger.error);
+main().catch(mainLogger.error.bind(mainLogger));
